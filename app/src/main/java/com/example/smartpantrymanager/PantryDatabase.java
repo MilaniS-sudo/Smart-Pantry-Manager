@@ -182,6 +182,43 @@ public class PantryDatabase extends SQLiteOpenHelper {
             // SEED DATA - runs once, inside onCreate
             // Units: dry goods in g, liquids in ml, countable items in pcs
             // =====================================================
+    /** All recipes as objects, each with its list of ingredients. */
+    public List<Recipe> getAllRecipes() {
+        List<Recipe> recipes = new ArrayList<>();
+        try (Cursor cursor = getRecipes()) {
+            while (cursor.moveToNext()) {
+                recipes.add(cursorToRecipe(cursor));
+            }
+        }
+        return recipes;
+    }
+
+    /** One recipe by id (null if not found). */
+    public Recipe getRecipeById(int recipeId) {
+        try (Cursor cursor = getRecipe(recipeId)) {
+            if (cursor.moveToFirst()) {
+                return cursorToRecipe(cursor);
+            }
+        }
+        return null;
+    }
+
+    private Recipe cursorToRecipe(Cursor cursor) {
+        int id = cursor.getInt(cursor.getColumnIndexOrThrow("id"));
+        String name = cursor.getString(cursor.getColumnIndexOrThrow("name"));
+        String steps = cursor.getString(cursor.getColumnIndexOrThrow("steps"));
+
+        List<RecipeIngredient> ingredients = new ArrayList<>();
+        try (Cursor ingredientCursor = getRecipeIngredients(id)) {
+            while (ingredientCursor.moveToNext()) {
+                ingredients.add(new RecipeIngredient(
+                        ingredientCursor.getString(ingredientCursor.getColumnIndexOrThrow("name")),
+                        ingredientCursor.getDouble(ingredientCursor.getColumnIndexOrThrow("quantity")),
+                        ingredientCursor.getString(ingredientCursor.getColumnIndexOrThrow("unit"))));
+            }
+        }
+        return new Recipe(id, name, steps, ingredients);
+    }
 
             private void seedRecipes(SQLiteDatabase db) {
         insertRecipe(db, "Scrambled Eggs",
