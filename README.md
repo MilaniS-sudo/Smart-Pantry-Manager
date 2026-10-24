@@ -51,5 +51,6 @@ Tables: `ingredients`, `recipes`, and `recipe_ingredients` (foreign key to `reci
 5. Add a few ingredients (e.g. eggs 3 pcs, milk 1 l, butter 250 g), then open
       **Suggested Recipes** to see matches.
 
-## Out of scope
-No maps, GPS/location or payment features, as required by the brief.
+## Scope
+The app focuses only on the user's own pantry and recipe matching. It does not
+use maps, location services or payments, and all data stays on the device.
