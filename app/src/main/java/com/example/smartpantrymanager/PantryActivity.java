@@ -68,18 +68,25 @@ public class PantryActivity extends AppCompatActivity
     }
 
     /** Delete tapped: confirm first, then remove from the database. */
+    /** Delete tapped: confirm first if the setting is on, then remove from the database. */
     @Override
     public void onDeleteClick(Ingredient ingredient) {
+        if (!SettingsActivity.isConfirmDeleteEnabled(this)) {
+            deleteIngredient(ingredient);
+            return;
+        }
         new AlertDialog.Builder(this)
                 .setTitle("Delete ingredient")
                 .setMessage("Remove " + ingredient.getName() + " from your pantry?")
-                .setPositiveButton("Delete", (dialog, which) -> {
-                    database.deleteIngredient(ingredient.getId());
-                    refreshIngredients();
-                    Toast.makeText(this, "Ingredient deleted.", Toast.LENGTH_SHORT).show();
-                })
+                .setPositiveButton("Delete", (dialog, which) -> deleteIngredient(ingredient))
                 .setNegativeButton("Cancel", null)
                 .show();
+    }
+
+    private void deleteIngredient(Ingredient ingredient) {
+        database.deleteIngredient(ingredient.getId());
+        refreshIngredients();
+        Toast.makeText(this, "Ingredient deleted.", Toast.LENGTH_SHORT).show();
     }
 
     @Override

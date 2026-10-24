@@ -56,7 +56,7 @@ public class RecipesActivity extends AppCompatActivity
     protected void onResume() {
         super.onResume();
         // Re-run the matching every time this screen is shown,
-        // in case the pantry changed
+        // in case the pantry or settings changed
         loadSuggestions();
     }
 
@@ -83,18 +83,24 @@ public class RecipesActivity extends AppCompatActivity
             textEmpty.setVisibility(View.GONE);
         }
 
-        // 2) BONUS - recipes missing exactly ONE ingredient, kept in a SEPARATE list
-        List<Recipe> almost = IngredientMatcher.findAlmostThere(allRecipes, pantry);
-        List<String> almostSubtitles = new ArrayList<>();
-        for (Recipe recipe : almost) {
-            List<String> missing = IngredientMatcher.getMissingIngredients(recipe, pantryIndex);
-            almostSubtitles.add("Missing: " + missing.get(0));
+        // 2) BONUS - recipes missing exactly ONE ingredient, in a SEPARATE list.
+        //    Only shown if the user turned it on in Settings.
+        if (SettingsActivity.isAlmostThereEnabled(this)) {
+            List<Recipe> almost = IngredientMatcher.findAlmostThere(allRecipes, pantry);
+            List<String> almostSubtitles = new ArrayList<>();
+            for (Recipe recipe : almost) {
+                List<String> missing = IngredientMatcher.getMissingIngredients(recipe, pantryIndex);
+                almostSubtitles.add("Missing: " + missing.get(0));
+            }
+            almostAdapter.setData(almost, almostSubtitles);
+            textAlmostHeader.setText("Almost there - missing 1 ingredient (" + almost.size() + ")");
+            int almostVisibility = almost.isEmpty() ? View.GONE : View.VISIBLE;
+            textAlmostHeader.setVisibility(almostVisibility);
+            recyclerAlmost.setVisibility(almostVisibility);
+        } else {
+            textAlmostHeader.setVisibility(View.GONE);
+            recyclerAlmost.setVisibility(View.GONE);
         }
-        almostAdapter.setData(almost, almostSubtitles);
-        textAlmostHeader.setText("Almost there - missing 1 ingredient (" + almost.size() + ")");
-        int almostVisibility = almost.isEmpty() ? View.GONE : View.VISIBLE;
-        textAlmostHeader.setVisibility(almostVisibility);
-        recyclerAlmost.setVisibility(almostVisibility);
     }
 
     /** Open the detail screen, passing the recipe id through the Intent. */
