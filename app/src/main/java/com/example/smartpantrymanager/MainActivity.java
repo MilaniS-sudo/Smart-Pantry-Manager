@@ -1,64 +1,100 @@
 package com.example.smartpantrymanager;
 
-import android.app.Activity;
-import android.os.Bundle;
 import android.content.Intent;
-import android.graphics.Typeface;
-import android.view.Gravity;
-import android.view.View;
-import android.widget.Button;
-import android.widget.LinearLayout;
+import android.os.Bundle;
+import android.util.Log;
+import android.view.MenuItem;
 import android.widget.TextView;
 
-public class MainActivity extends Activity {
+import androidx.appcompat.app.AppCompatActivity;
 
-    private int dp(int value) {
-        return (int) (value * getResources().getDisplayMetrics().density);
-    }
+import com.google.android.material.appbar.MaterialToolbar;
+
+/**
+ * Home screen. Navigation is available two ways:
+ *  - the toolbar options menu (top right)
+ *  - the three buttons in the middle of the screen
+ */
+public class MainActivity extends AppCompatActivity {
+
+    private static final String TAG = "MainActivity";
+
+    private PantryDatabase database;
+    private TextView textSummary;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+        Log.d(TAG, "onCreate - building the screen");
 
-        LinearLayout layout = new LinearLayout(this);
-        layout.setOrientation(LinearLayout.VERTICAL);
-        layout.setGravity(Gravity.CENTER);
-        layout.setPadding(dp(24), dp(24), dp(24), dp(24));
-        layout.setBackgroundColor(0xFFF7F5EF);
+        database = new PantryDatabase(this);
+        textSummary = findViewById(R.id.textPantrySummary);
 
-        TextView title = new TextView(this);
-        title.setText("Smart Pantry Manager");
-        title.setTextSize(27);
-        title.setTypeface(null, Typeface.BOLD);
-        title.setTextColor(0xFF285943);
-        title.setGravity(Gravity.CENTER);
+        // Toolbar menu = the app's navigation element
+        MaterialToolbar toolbar = findViewById(R.id.toolbar);
+        toolbar.inflateMenu(R.menu.main_menu);
+        toolbar.setOnMenuItemClickListener(this::onMenuItemSelected);
 
-        TextView subtitle = new TextView(this);
-        subtitle.setText("Manage your ingredients. Discover what you can cook.");
-        subtitle.setTextSize(16);
-        subtitle.setGravity(Gravity.CENTER);
-        subtitle.setPadding(0, dp(12), 0, dp(24));
-
-        layout.addView(title);
-        layout.addView(subtitle);
-
-        addButton(layout, "My Pantry", PantryActivity.class);
-        addButton(layout, "Suggested Recipes", RecipesActivity.class);
-        addButton(layout, "Settings", SettingsActivity.class);
-
-        setContentView(layout);
+        // Buttons use explicit Intents to open each screen
+        findViewById(R.id.buttonPantry).setOnClickListener(v -> open(PantryActivity.class));
+        findViewById(R.id.buttonRecipes).setOnClickListener(v -> open(RecipesActivity.class));
+        findViewById(R.id.buttonSettings).setOnClickListener(v -> open(SettingsActivity.class));
     }
 
-    private void addButton(LinearLayout layout, String label,
-                           Class<?> destination) {
-        Button button = new Button(this);
-        button.setText(label);
-        LinearLayout.LayoutParams params =
-                new LinearLayout.LayoutParams(-1, dp(52));
-        params.setMargins(0, dp(8), 0, dp(8));
-        layout.addView(button, params);
+    @Override
+    protected void onStart() {
+        super.onStart();
+        Log.d(TAG, "onStart - screen becoming visible");
+    }
 
-        button.setOnClickListener(v ->
-                startActivity(new Intent(MainActivity.this, destination)));
+    @Override
+    protected void onResume() {
+        super.onResume();
+        Log.d(TAG, "onResume - refreshing pantry summary");
+        // Runs every time the user comes back here, so the numbers are always current
+        int ingredientCount = database.getIngredientList().size();
+        long recipeCount = database.getRecipeCount();
+        textSummary.setText("You have " + ingredientCount + " ingredient(s) in your pantry\n"
+                + recipeCount + " recipes available in the database");
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        Log.d(TAG, "onPause");
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        Log.d(TAG, "onStop - screen no longer visible");
+    }
+
+    @Override
+    protected void onDestroy() {
+        Log.d(TAG, "onDestroy - closing database");
+        database.close();
+        super.onDestroy();
+    }
+
+    /** Handles taps on the toolbar menu items. */
+    private boolean onMenuItemSelected(MenuItem item) {
+        int id = item.getItemId();
+        if (id == R.id.menu_pantry) {
+            open(PantryActivity.class);
+            return true;
+        } else if (id == R.id.menu_recipes) {
+            open(RecipesActivity.class);
+            return true;
+        } else if (id == R.id.menu_settings) {
+            open(SettingsActivity.class);
+            return true;
+        }
+        return false;
+    }
+
+    private void open(Class<?> destination) {
+        startActivity(new Intent(this, destination));
     }
 }
