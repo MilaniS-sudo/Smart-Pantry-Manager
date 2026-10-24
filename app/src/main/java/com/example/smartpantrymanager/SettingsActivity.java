@@ -1,38 +1,63 @@
-
 package com.example.smartpantrymanager;
 
-import android.app.Activity;
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.view.Gravity;
-import android.widget.LinearLayout;
 import android.widget.TextView;
 
-public class SettingsActivity extends Activity {
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.SwitchCompat;
+
+/**
+ * Settings screen. Preferences are saved with SharedPreferences,
+ * so they are kept after the app is closed and reopened.
+ */
+public class SettingsActivity extends AppCompatActivity {
+
+    private static final String PREFS_NAME = "smart_pantry_settings";
+    private static final String KEY_SHOW_ALMOST_THERE = "show_almost_there";
+    private static final String KEY_CONFIRM_DELETE = "confirm_delete";
+
+    // ---------- Static helpers so other screens can read the settings ----------
+
+    private static SharedPreferences getPrefs(Context context) {
+        return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+    }
+
+    public static boolean isAlmostThereEnabled(Context context) {
+        return getPrefs(context).getBoolean(KEY_SHOW_ALMOST_THERE, true);
+    }
+
+    public static boolean isConfirmDeleteEnabled(Context context) {
+        return getPrefs(context).getBoolean(KEY_CONFIRM_DELETE, true);
+    }
+
+    // ---------------------------------------------------------------------------
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_settings);
 
-        LinearLayout layout = new LinearLayout(this);
-        layout.setOrientation(LinearLayout.VERTICAL);
-        layout.setGravity(Gravity.CENTER);
-        layout.setPadding(32, 32, 32, 32);
+        SharedPreferences prefs = getPrefs(this);
 
-        TextView title = new TextView(this);
-        title.setText("Settings & Profile");
-        title.setTextSize(24);
+        // "Almost there" toggle - read by RecipesActivity
+        SwitchCompat switchAlmostThere = findViewById(R.id.switchAlmostThere);
+        switchAlmostThere.setChecked(isAlmostThereEnabled(this));
+        switchAlmostThere.setOnCheckedChangeListener((button, isChecked) ->
+                prefs.edit().putBoolean(KEY_SHOW_ALMOST_THERE, isChecked).apply());
 
-        TextView details = new TextView(this);
-        details.setText(
-                "Smart Pantry Manager\n\n" +
-                        "Manage your pantry and reduce food waste.\n\n" +
-                        "Version 1.0"
-        );
-        details.setTextSize(18);
+        // Delete confirmation toggle - read by PantryActivity
+        SwitchCompat switchConfirmDelete = findViewById(R.id.switchConfirmDelete);
+        switchConfirmDelete.setChecked(isConfirmDeleteEnabled(this));
+        switchConfirmDelete.setOnCheckedChangeListener((button, isChecked) ->
+                prefs.edit().putBoolean(KEY_CONFIRM_DELETE, isChecked).apply());
 
-        layout.addView(title);
-        layout.addView(details);
-
-        setContentView(layout);
+        // Simple profile stats from the database
+        PantryDatabase database = new PantryDatabase(this);
+        TextView textStats = findViewById(R.id.textStats);
+        textStats.setText("Ingredients in pantry: " + database.getIngredientList().size()
+                + "\nRecipes in database: " + database.getRecipeCount());
+        database.close();
     }
 }
